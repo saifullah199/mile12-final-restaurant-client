@@ -2,9 +2,17 @@ import { useContext } from "react";
 import { useForm } from "react-hook-form";
 import { AuthContext } from "../../Provider/AuthProvider";
 import { Helmet } from "react-helmet-async";
+import useAxiosPublic from "../../Hooks/useAxiosPublic";
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
+import useAuth from "../../Hooks/useAuth";
+import { FaGoogle } from "react-icons/fa";
 
 
 const Register = () => {
+  const axiosPublic = useAxiosPublic()
+  const {googleSignIn,user} = useAuth()
+  const navigate = useNavigate()
     const {
         register,
         handleSubmit,
@@ -12,13 +20,54 @@ const Register = () => {
         formState: { errors },
       } = useForm()
     
-      const {createUser} = useContext(AuthContext)
+      const {createUser,updateUserProfile} = useContext(AuthContext)
+      
       const onSubmit = (data) => {
         console.log(data)
         createUser(data.email, data.password)
         .then(result => {
             const loggedUser = result.user;
             console.log(loggedUser)
+            updateUserProfile(data.name, data.photoURL)
+            .then(() =>{
+              // create user entry in the database
+              const userInfo = {
+                name: data.name,
+                email: data.email
+              }
+              axiosPublic.post('/users',userInfo)
+              .then(res => {
+                if(res.data.insertedId){
+                  console.log('user added to the database')
+                  Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "User Added successfully",
+                    showConfirmButton: false,
+                    timer: 1500
+                  });
+                  navigate('/')
+                }
+              })
+            })
+        })
+      }
+
+      const handleGoogleSignIn = () => {
+
+        googleSignIn()
+        .then(result => {
+          console.log(result.user)
+          const userInfo = {
+            email: result.user?.email,
+            name: result.user?.displayName
+          }
+          axiosPublic.post('/users', userInfo)
+          .then(res => {
+            console.log(res.data)
+            
+          })
+          navigate('/')
         })
       }
     return (
@@ -60,6 +109,11 @@ const Register = () => {
         <div className="form-control mt-6">
           <button className="btn btn-primary"> Register </button>
         </div>
+        <div className='px-4 py-2'>
+               <button className="btn" onClick={ handleGoogleSignIn}>
+                  <FaGoogle  />
+                </button> 
+          </div>
       </form>
     </div>
   </div>

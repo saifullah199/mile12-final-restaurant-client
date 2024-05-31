@@ -5,6 +5,9 @@ import { loadCaptchaEnginge, LoadCanvasTemplate,
      validateCaptcha } from 'react-simple-captcha';
 import { AuthContext } from '../../Provider/AuthProvider';
 import { Helmet } from 'react-helmet-async';
+import { FaGoogle } from 'react-icons/fa';
+import useAuth from '../../Hooks/useAuth';
+import useAxiosPublic from '../../Hooks/useAxiosPublic';
 
 const Login = () => {
  
@@ -12,12 +15,17 @@ const Login = () => {
   const [disabled, setDisabled] = useState(true)
   const navigate = useNavigate()
   const location = useLocation()
+  const {googleSignIn} = useAuth()
+  const axiosPublic = useAxiosPublic()
 
   const from = location.state?.from?.pathname || "/"
   console.log('state in the location', location.state)
+
   useEffect(() => {
       loadCaptchaEnginge(6);
   },[])
+
+
   const handleSignIn = async e => {
       e.preventDefault()
       const form = e.target
@@ -34,6 +42,24 @@ const Login = () => {
         console.log(err)
        
       }
+    }
+
+    const handleGoogleSignIn = () => {
+
+      googleSignIn()
+      .then(result => {
+        console.log(result.user)
+        const userInfo = {
+          email: result.user?.email,
+          name: result.user?.displayName
+        }
+        axiosPublic.post('/users', userInfo)
+        .then(res => {
+          console.log(res.data)
+          
+        })
+        navigate('/')
+      })
     }
 
     const handleValidate = (e) => {
@@ -72,7 +98,7 @@ const Login = () => {
             className='flex cursor-pointer items-center justify-center mt-4 text-gray-600 transition-colors duration-300 transform border rounded-lg   hover:bg-gray-50 '
           >
             <div className='px-4 py-2'>
-              {/* <FaGoogle onClick={ handleGoogleSignIn} /> */}
+               <FaGoogle onClick={ handleGoogleSignIn} /> 
             </div>
 
             <span className='w-5/6 px-4 py-3 font-bold text-center'>
